@@ -2,11 +2,11 @@
 <html lang="en">
 <!--
   PROJECT: Product_Lifetime
-  VERSION: 1.6.0
+  VERSION: 1.6.1
   DEPLOYMENT: Vercel Static Edge
   CHANGELOG: 
-  - Integrated Omni-Emitter Webhook for exhaustive ledger tracking.
-  - Injected strict persistence warning matrix.
+  - Patched Firebase 'undefined' payload rejection error (Dead Button Fix).
+  - Injected explicit UI error telemetry for Auth and Firestore operations.
 -->
 <head>
     <meta charset="UTF-8">
@@ -61,7 +61,7 @@
         const isLocalMode = !firebaseConfig.apiKey; 
         
         // INJECT NEW V2 WEBHOOK URL HERE:
-        const GOOGLE_SHEETS_WEBHOOK_URL = ""; 
+        const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzxWbX50wRfW5VEUJqmLkwsrxivhrpSPesB74Uv2558wCMTTH8dqdZM5hnY0AoiSK7wEw/exec"; 
 
         // ============================================================================
 
@@ -103,7 +103,6 @@
             const [user, setUser] = useState(null);
             const pastDate = Date.now() - (4 * 24 * 60 * 60 * 1000); 
 
-            // Initialize state depending on whether we are in local mode or listening to Firebase
             const [products, setProducts] = useState(isLocalMode ? [
                 { id: "demo_1", name: "Fayha Styling Tool GH12", storeId: "store_A", agentId: "agent_01", currentPhase: 1, notes: "Needs stronger hook.", dateAdded: pastDate, lastModified: pastDate, isArchived: false }
             ] : []);
@@ -113,11 +112,13 @@
             const [activeProductModal, setActiveProductModal] = useState(null);
             
             const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
-            const [toastMessage, setToastMessage] = useState(null);
+            
+            // Modified Toast State to handle Error variants
+            const [toast, setToast] = useState(null);
 
-            const showToast = (message) => {
-                setToastMessage(message);
-                setTimeout(() => setToastMessage(null), 4000);
+            const showToast = (message, type = 'success') => {
+                setToast({ message, type });
+                setTimeout(() => setToast(null), 5000);
             };
 
             // ========================================================================
@@ -129,8 +130,13 @@
                     return;
                 }
                 const initAuth = async () => {
-                    try { await signInAnonymously(auth); } 
-                    catch (err) { setIsAuthLoading(false); }
+                    try { 
+                        await signInAnonymously(auth); 
+                    } catch (err) { 
+                        console.error("Auth Failure:", err);
+                        setIsAuthLoading(false); 
+                        showToast("AUTH ERROR: Enable 'Anonymous' sign-in in Firebase.", "error");
+                    }
                 };
                 initAuth();
                 const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -147,7 +153,10 @@
                 const unsubscribe = onSnapshot(productsRef, (snapshot) => {
                     const synchronizedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setProducts(synchronizedData);
-                }, (err) => console.error("Sync Error:", err));
+                }, (err) => {
+                    console.error("Sync Error:", err);
+                    showToast(`SYNC ERROR: ${err.message}`, "error");
+                });
                 return () => unsubscribe();
             }, [user]);
 
@@ -181,21 +190,19 @@
                         headers: { 'Content-Type': 'text/plain' }, 
                         body: JSON.stringify(payload)
                     });
-                    
-                    showToast(`[${actionType}] event logged for ${productData.name}.`);
                 } catch (error) {
                     console.error("Transmission Failure:", error);
                 }
             };
 
             // ========================================================================
-            // DATA MUTATORS (CRUD + Webhook Dispatches)
+            // DATA MUTATORS (CRUD + Payload Sanitization Matrix)
             // ========================================================================
 
             const handleAddProduct = async (payload) => {
-                const newProduct = { ...payload, id: `prod_${Date.now()}`, currentPhase: 0, dateAdded: Date.now(), lastModified: Date.now(), isArchived: false };
+                const localId = `prod_${Date.now()}`;
+                const newProduct = { ...payload, id: localId, currentPhase: 0, dateAdded: Date.now(), lastModified: Date.now(), isArchived: false };
                 
-                // Trigger Webhook Event: Creation
                 dispatchToLedger(newProduct, "NODE_INJECTED", "ACTIVE");
 
                 if (isLocalMode) {
@@ -204,12 +211,25 @@
                     return;
                 }
                 
-                if (!user) return;
+                if (!user) {
+                    showToast("INJECTION BLOCKED: System not authenticated. Check Firebase settings.", "error");
+                    return;
+                }
+                
                 try {
                     const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'pipeline_products');
-                    await addDoc(productsRef, { ...newProduct, id: undefined });
+                    
+                    // [EMERGENT PARADIGM] Cryptographic Stripping: 
+                    // Firebase explicitly rejects the 'id' field if defined as 'undefined'. We completely separate it.
+                    const { id, ...firestorePayload } = newProduct;
+                    
+                    await addDoc(productsRef, firestorePayload);
                     setIsAddModalOpen(false);
-                } catch(e) { console.error(e); }
+                    showToast("Node successfully injected into Cloud Matrix.");
+                } catch(e) { 
+                    console.error("Injection Crash:", e);
+                    showToast(`FIRESTORE ERROR: ${e.message}`, "error");
+                }
             };
 
             const handleUpdatePhase = (productId, newPhaseIndex) => {
@@ -218,7 +238,6 @@
 
                 const updatedProduct = { ...product, currentPhase: newPhaseIndex, lastModified: Date.now() };
                 
-                // Trigger Webhook Event: Phase Transition
                 const finalStatus = newPhaseIndex === 5 ? "LAUNCHED (WINNER)" : "ACTIVE";
                 dispatchToLedger(updatedProduct, "PHASE_TRANSITION", finalStatus);
 
@@ -227,11 +246,14 @@
                     return;
                 }
 
-                if (user) {
-                    try {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
-                        updateDoc(docRef, { currentPhase: newPhaseIndex, lastModified: Date.now() });
-                    } catch(e) { console.error(e); }
+                if (!user) return showToast("TRANSITION BLOCKED: Auth Offline.", "error");
+
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
+                    updateDoc(docRef, { currentPhase: newPhaseIndex, lastModified: Date.now() });
+                } catch(e) { 
+                    console.error("Transition Crash:", e);
+                    showToast(`UPDATE ERROR: ${e.message}`, "error");
                 }
             };
 
@@ -240,8 +262,6 @@
                 if (!product) return;
 
                 const updatedProduct = { ...product, ...updatedFields, lastModified: Date.now() };
-
-                // Trigger Webhook Event: Details Mutation
                 dispatchToLedger(updatedProduct, "DETAILS_MUTATED", "ACTIVE");
 
                 if (isLocalMode) {
@@ -250,12 +270,20 @@
                     return;
                 }
 
-                if (user) {
-                    try {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
-                        updateDoc(docRef, { ...updatedFields, lastModified: Date.now() });
-                        setActiveProductModal(null);
-                    } catch(e) { console.error(e); }
+                if (!user) return showToast("MUTATION BLOCKED: Auth Offline.", "error");
+
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
+                    
+                    // Sanitize against undefined values
+                    const sanitizedFields = Object.fromEntries(Object.entries(updatedFields).filter(([_, v]) => v !== undefined));
+                    
+                    updateDoc(docRef, { ...sanitizedFields, lastModified: Date.now() });
+                    setActiveProductModal(null);
+                    showToast("Node details synchronized.");
+                } catch(e) { 
+                    console.error("Mutation Crash:", e);
+                    showToast(`UPDATE ERROR: ${e.message}`, "error");
                 }
             };
 
@@ -264,8 +292,6 @@
                 if (!product) return;
                 
                 const archivedProduct = { ...product, isArchived: true, lastModified: Date.now() };
-
-                // Trigger Webhook Event: Archival
                 dispatchToLedger(archivedProduct, "SOFT_ARCHIVED", "ARCHIVED (GRAVEYARD)");
 
                 if (isLocalMode) {
@@ -274,12 +300,16 @@
                     return;
                 }
                 
-                if (user) {
-                    try {
-                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
-                        updateDoc(docRef, { isArchived: true, lastModified: Date.now() });
-                        setActiveProductModal(null);
-                    } catch(e) { console.error(e); }
+                if (!user) return showToast("ARCHIVAL BLOCKED: Auth Offline.", "error");
+
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
+                    updateDoc(docRef, { isArchived: true, lastModified: Date.now() });
+                    setActiveProductModal(null);
+                    showToast("Node successfully committed to Ledger.");
+                } catch(e) { 
+                    console.error("Archival Crash:", e);
+                    showToast(`ARCHIVE ERROR: ${e.message}`, "error");
                 }
             };
 
@@ -307,25 +337,25 @@
             return (
                 <div className="h-screen bg-slate-50 font-sans text-slate-900 flex flex-col overflow-hidden relative">
                     
-                    {toastMessage && (
+                    {/* ENHANCED TELEMETRY TOAST */}
+                    {toast && (
                         <div className="absolute top-6 left-1/2 z-50 animate-toast">
-                            <div className="bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-semibold tracking-wide border border-slate-700">
-                                <span className="text-emerald-400"><IconCheckCircle /></span>
-                                {toastMessage}
+                            <div className={`${toast.type === 'error' ? 'bg-red-600 border-red-500' : 'bg-slate-900 border-slate-700'} text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-semibold tracking-wide border`}>
+                                {toast.type === 'error' ? <IconWarning /> : <span className="text-emerald-400"><IconCheckCircle /></span>}
+                                {toast.message}
                             </div>
                         </div>
                     )}
 
-                    {/* STRICT PERSISTENCE WARNING BANNER */}
                     {isLocalMode && (
                         <div className="bg-red-600 text-white px-4 py-2 text-xs font-bold flex justify-center items-center gap-2 uppercase tracking-widest shrink-0">
-                            <IconWarning /> Critical Warning: You are in Local Memory Mode. Data will erase on refresh. Multi-user sync is offline. Provide Firebase API Keys to activate persistence.
+                            <IconWarning /> Critical Warning: Local Memory Mode. Data will erase on refresh. Inject Firebase API Keys.
                         </div>
                     )}
 
                     <header className="bg-white px-6 py-4 flex items-center justify-between shadow-sm border-b border-slate-200 z-10 shrink-0">
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Product_Lifetime <span className="text-slate-400 font-normal text-sm">v1.6.0</span></h1>
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Product_Lifetime <span className="text-slate-400 font-normal text-sm">v1.6.1</span></h1>
                             <p className="text-xs text-slate-500 font-medium flex items-center gap-2 mt-1">
                                 <span className={`w-2 h-2 rounded-full ${isLocalMode ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`}></span>
                                 {isLocalMode ? 'Local Volatility Active' : 'Cloud Sync Active'} &bull; {activeProducts.length} active nodes
