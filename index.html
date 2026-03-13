@@ -47,28 +47,21 @@
         // [TARGET INJECTION ZONE: THE SYNCHRONIZATION MANDATE]
         // ============================================================================
         
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "firebase/app";
-        import { getAnalytics } from "firebase/analytics";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-        
-        // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
-            apiKey: "AIzaSyCam7uiqBQBYurpnzDYKBt2RVdvRb7Yxz0",
-            authDomain: "product-lifetime.firebaseapp.com",
-            projectId: "product-lifetime",
-            storageBucket: "product-lifetime.firebasestorage.app",
-            messagingSenderId: "963718809412",
-            appId: "1:963718809412:web:d433f8774efeef43fb7911",
-            measurementId: "G-4FMVKJYVZJ",
-        };
+        // TO ENABLE MULTI-AGENT SYNC & PERSISTENCE, REPLACE THIS OBJECT WITH YOUR FIREBASE KEYS
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCam7uiqBQBYurpnzDYKBt2RVdvRb7Yxz0", 
+            authDomain: "product-lifetime.firebaseapp.com", 
+            projectId: "product-lifetime", 
+            storageBucket: "product-lifetime.firebasestorage.app", 
+            messagingSenderId: "963718809412", 
+            appId: "1:963718809412:web:d433f8774efeef43fb7911", 
+            measurementId: "G-4FMVKJYVZJ" 
+        }; 
         
         const isLocalMode = !firebaseConfig.apiKey; 
         
         // INJECT NEW V2 WEBHOOK URL HERE:
-        const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzxWbX50wRfW5VEUJqmLkwsrxivhrpSPesB74Uv2558wCMTTH8dqdZM5hnY0AoiSK7wEw/exec"; 
+        const GOOGLE_SHEETS_WEBHOOK_URL = ""; 
 
         // ============================================================================
 
@@ -372,7 +365,7 @@
                                                     
                                                     {isStagnant && (
                                                         <div className="mt-2 mb-1 inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-1 rounded border border-amber-200 uppercase tracking-wide">
-                                                            <IconAlert /> Stagnant Node (>{Math.floor((Date.now() - product.lastModified)/(1000*60*60*24))}d)
+                                                            <span><IconAlert /></span> Stagnant Node ({'>'}{Math.floor((Date.now() - product.lastModified)/(1000*60*60*24))}d)
                                                         </div>
                                                     )}
 
