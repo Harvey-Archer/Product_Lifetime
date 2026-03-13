@@ -2,11 +2,13 @@
 <html lang="en">
 <!--
   PROJECT: Product_Lifetime
-  VERSION: 1.6.1
+  VERSION: 1.7.0
   DEPLOYMENT: Vercel Static Edge
   CHANGELOG: 
-  - Patched Firebase 'undefined' payload rejection error (Dead Button Fix).
-  - Injected explicit UI error telemetry for Auth and Firestore operations.
+  - [EMERGENT PARADIGM] Cumulative Prompt Repository injected into modals.
+  - UI refactored: Replaced Store Tag with Date Anchor on cards.
+  - Injected Tagging (Folksonomy) system.
+  - Payload emitter expanded to v3 schema.
 -->
 <head>
     <meta charset="UTF-8">
@@ -61,7 +63,7 @@
         const isLocalMode = !firebaseConfig.apiKey; 
         
         // INJECT NEW V2 WEBHOOK URL HERE:
-        const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzxWbX50wRfW5VEUJqmLkwsrxivhrpSPesB74Uv2558wCMTTH8dqdZM5hnY0AoiSK7wEw/exec"; 
+        const GOOGLE_SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxg4cSzz64xr4ccnZ8nbDV1-PfFxOcUXr2lrZ0iQ0oXshcZN-amv_MXyeTh39aa8cuEKQ/exec";  
 
         // ============================================================================
 
@@ -92,28 +94,27 @@
         const IconClock = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
         const IconPackage = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>;
         const IconUser = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
-        const IconStore = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
         const IconAlign = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>;
         const IconAlert = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
         const IconArchive = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>;
         const IconCheckCircle = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;
         const IconWarning = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>;
+        const IconCalendar = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
+        const IconTag = () => <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>;
 
         function PipelineApp() {
             const [user, setUser] = useState(null);
             const pastDate = Date.now() - (4 * 24 * 60 * 60 * 1000); 
 
+            // Expanded baseline schema to include prompts and tags
             const [products, setProducts] = useState(isLocalMode ? [
-                { id: "demo_1", name: "Fayha Styling Tool GH12", storeId: "store_A", agentId: "agent_01", currentPhase: 1, notes: "Needs stronger hook.", dateAdded: pastDate, lastModified: pastDate, isArchived: false }
+                { id: "demo_1", name: "Fayha Styling Tool GH12", storeId: "store_A", agentId: "agent_01", currentPhase: 1, notes: "Needs stronger hook.", dateAdded: pastDate, lastModified: pastDate, isArchived: false, tags: "haircare, trending", prompts: {0: "Give me 5 angles for a hair tool"} }
             ] : []);
             
             const [isAuthLoading, setIsAuthLoading] = useState(true);
             const [isAddModalOpen, setIsAddModalOpen] = useState(false);
             const [activeProductModal, setActiveProductModal] = useState(null);
-            
             const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
-            
-            // Modified Toast State to handle Error variants
             const [toast, setToast] = useState(null);
 
             const showToast = (message, type = 'success') => {
@@ -121,9 +122,7 @@
                 setTimeout(() => setToast(null), 5000);
             };
 
-            // ========================================================================
-            // MULTI-AGENT SYNCHRONIZATION ENGINE
-            // ========================================================================
+            // Authentication & Synchronization
             useEffect(() => {
                 if (isLocalMode) {
                     setIsAuthLoading(false);
@@ -146,7 +145,6 @@
                 return () => unsubscribe && unsubscribe();
             }, []);
 
-            // Firebase Cloud Listening (Real-time Sync)
             useEffect(() => {
                 if (isLocalMode || !user) return;
                 const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'pipeline_products');
@@ -161,7 +159,7 @@
             }, [user]);
 
             // ========================================================================
-            // THE PAN-OPTIC LEDGER EMITTER (v2)
+            // THE PAN-OPTIC LEDGER EMITTER (v3)
             // ========================================================================
             const dispatchToLedger = async (productData, actionType, finalStatus = "ACTIVE") => {
                 if (!GOOGLE_SHEETS_WEBHOOK_URL) return;
@@ -169,6 +167,11 @@
                 const daysInPipeline = Math.floor((Date.now() - productData.dateAdded) / (1000 * 60 * 60 * 24));
                 const currentPhaseName = (PIPELINE_PHASES.find(p => p.index === productData.currentPhase) || {}).name;
                 
+                // Construct the concatenated prompts string for the ledger
+                const formattedPromptsLog = Object.entries(productData.prompts || {})
+                    .map(([phaseIdx, text]) => `[${(PIPELINE_PHASES[phaseIdx] || {}).name}]:\n${text}`)
+                    .join('\n\n--- \n\n');
+
                 const payload = {
                     actionType: actionType,
                     id: productData.id,
@@ -180,7 +183,9 @@
                     timeInPipeline: daysInPipeline,
                     notes: productData.notes,
                     driveLink: productData.driveLink,
-                    competitorUrl: productData.competitorUrl
+                    competitorUrl: productData.competitorUrl,
+                    tags: productData.tags || "",
+                    promptsLog: formattedPromptsLog
                 };
 
                 try {
@@ -196,12 +201,13 @@
             };
 
             // ========================================================================
-            // DATA MUTATORS (CRUD + Payload Sanitization Matrix)
+            // DATA MUTATORS
             // ========================================================================
 
             const handleAddProduct = async (payload) => {
                 const localId = `prod_${Date.now()}`;
-                const newProduct = { ...payload, id: localId, currentPhase: 0, dateAdded: Date.now(), lastModified: Date.now(), isArchived: false };
+                // Prompts hash map initializes empty on creation.
+                const newProduct = { ...payload, id: localId, currentPhase: 0, dateAdded: Date.now(), lastModified: Date.now(), isArchived: false, prompts: {} };
                 
                 dispatchToLedger(newProduct, "NODE_INJECTED", "ACTIVE");
 
@@ -211,18 +217,11 @@
                     return;
                 }
                 
-                if (!user) {
-                    showToast("INJECTION BLOCKED: System not authenticated. Check Firebase settings.", "error");
-                    return;
-                }
+                if (!user) return showToast("INJECTION BLOCKED: System not authenticated.", "error");
                 
                 try {
                     const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'pipeline_products');
-                    
-                    // [EMERGENT PARADIGM] Cryptographic Stripping: 
-                    // Firebase explicitly rejects the 'id' field if defined as 'undefined'. We completely separate it.
                     const { id, ...firestorePayload } = newProduct;
-                    
                     await addDoc(productsRef, firestorePayload);
                     setIsAddModalOpen(false);
                     showToast("Node successfully injected into Cloud Matrix.");
@@ -252,7 +251,6 @@
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
                     updateDoc(docRef, { currentPhase: newPhaseIndex, lastModified: Date.now() });
                 } catch(e) { 
-                    console.error("Transition Crash:", e);
                     showToast(`UPDATE ERROR: ${e.message}`, "error");
                 }
             };
@@ -274,15 +272,11 @@
 
                 try {
                     const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'pipeline_products', productId);
-                    
-                    // Sanitize against undefined values
                     const sanitizedFields = Object.fromEntries(Object.entries(updatedFields).filter(([_, v]) => v !== undefined));
-                    
                     updateDoc(docRef, { ...sanitizedFields, lastModified: Date.now() });
                     setActiveProductModal(null);
                     showToast("Node details synchronized.");
                 } catch(e) { 
-                    console.error("Mutation Crash:", e);
                     showToast(`UPDATE ERROR: ${e.message}`, "error");
                 }
             };
@@ -308,12 +302,10 @@
                     setActiveProductModal(null);
                     showToast("Node successfully committed to Ledger.");
                 } catch(e) { 
-                    console.error("Archival Crash:", e);
                     showToast(`ARCHIVE ERROR: ${e.message}`, "error");
                 }
             };
 
-            // Drag Physics
             const onDragStart = (e, productId) => {
                 e.dataTransfer.setData("text/plain", productId);
                 e.dataTransfer.effectAllowed = "move";
@@ -337,7 +329,6 @@
             return (
                 <div className="h-screen bg-slate-50 font-sans text-slate-900 flex flex-col overflow-hidden relative">
                     
-                    {/* ENHANCED TELEMETRY TOAST */}
                     {toast && (
                         <div className="absolute top-6 left-1/2 z-50 animate-toast">
                             <div className={`${toast.type === 'error' ? 'bg-red-600 border-red-500' : 'bg-slate-900 border-slate-700'} text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 text-sm font-semibold tracking-wide border`}>
@@ -355,7 +346,7 @@
 
                     <header className="bg-white px-6 py-4 flex items-center justify-between shadow-sm border-b border-slate-200 z-10 shrink-0">
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Product_Lifetime <span className="text-slate-400 font-normal text-sm">v1.6.1</span></h1>
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Product_Lifetime <span className="text-slate-400 font-normal text-sm">v1.7.0</span></h1>
                             <p className="text-xs text-slate-500 font-medium flex items-center gap-2 mt-1">
                                 <span className={`w-2 h-2 rounded-full ${isLocalMode ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`}></span>
                                 {isLocalMode ? 'Local Volatility Active' : 'Cloud Sync Active'} &bull; {activeProducts.length} active nodes
@@ -384,8 +375,11 @@
                                         <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar pb-4">
                                             {phaseProducts.map((product) => {
                                                 const isStagnant = (Date.now() - product.lastModified) > STAGNATION_THRESHOLD_MS;
+                                                const dateAddedStr = new Date(product.dateAdded).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                                const tagArray = (product.tags || '').split(',').filter(t => t.trim() !== '');
+
                                                 return (
-                                                <div key={product.id} draggable onDragStart={(e) => onDragStart(e, product.id)} onClick={() => setActiveProductModal(product)} className={`bg-white rounded-xl p-4 shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all group ${isStagnant ? 'border-amber-300 shadow-amber-100' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                <div key={product.id} draggable onDragStart={(e) => onDragStart(e, product.id)} onClick={() => setActiveProductModal(product)} className={`bg-white rounded-xl p-4 shadow-sm border cursor-grab active:cursor-grabbing hover:shadow-md transition-all group flex flex-col ${isStagnant ? 'border-amber-300 shadow-amber-100' : 'border-slate-200 hover:border-slate-300'}`}>
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="flex items-center gap-2 pr-2">
                                                             <div className="text-slate-300 group-hover:text-slate-500"><IconGrip /></div>
@@ -399,10 +393,27 @@
                                                         </div>
                                                     )}
 
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-slate-100 text-slate-600 uppercase tracking-wide"><IconStore />{(STORES.find(s => s.id === product.storeId) || {}).name}</span>
-                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-indigo-50 text-indigo-600 uppercase tracking-wide"><IconUser />{(AGENTS.find(a => a.id === product.agentId) || {}).name}</span>
+                                                    <div className="flex flex-wrap gap-2 mt-2 items-center">
+                                                        {/* Temporal Anchor: Replacing Store Badge */}
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-slate-100 text-slate-600 uppercase tracking-wide">
+                                                            <IconCalendar /> Created {dateAddedStr}
+                                                        </span>
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md bg-indigo-50 text-indigo-600 uppercase tracking-wide">
+                                                            <IconUser />{(AGENTS.find(a => a.id === product.agentId) || {}).name}
+                                                        </span>
                                                     </div>
+                                                    
+                                                    {/* Folksonomy Layer: Render Tags */}
+                                                    {tagArray.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-2.5">
+                                                            {tagArray.map((tag, i) => (
+                                                                <span key={i} className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                                                    <IconTag /> {tag.trim().toUpperCase()}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
                                                     {product.notes && (
                                                         <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 line-clamp-2">
                                                             <span className="inline-block mr-1 opacity-70 align-middle"><IconAlign /></span>{product.notes}
@@ -427,18 +438,18 @@
             );
         }
 
+        // ============================================================================
+        // MODALS & DATA INGRESS
+        // ============================================================================
+
         function LedgerModal({ archivedProducts, onClose, STORES, AGENTS }) {
             return (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                         <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                             <div>
-                                <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                                    <IconArchive /> Local Historical Ledger
-                                </h2>
-                                <p className="text-xs text-slate-500 font-medium mt-1 tracking-wide">
-                                    Displaying soft-archived entities currently stored in local memory parameters.
-                                </p>
+                                <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2"><IconArchive /> Local Historical Ledger</h2>
+                                <p className="text-xs text-slate-500 font-medium mt-1 tracking-wide">Displaying soft-archived entities currently stored in local memory parameters.</p>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><IconX/></button>
                         </div>
@@ -472,16 +483,13 @@
                                 </table>
                             )}
                         </div>
-                        <div className="p-4 border-t border-slate-200 bg-slate-50 text-center shrink-0">
-                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">To verify external backup, consult your Google Sheet.</p>
-                        </div>
                     </div>
                 </div>
             );
         }
 
         function AddProductModal({ onClose, onSubmit }) {
-            const [formData, setFormData] = useState({ name: '', storeId: STORES[0].id, agentId: AGENTS[0].id, notes: '' });
+            const [formData, setFormData] = useState({ name: '', storeId: STORES[0].id, agentId: AGENTS[0].id, tags: '', notes: '' });
             const handleSubmit = (e) => { e.preventDefault(); if (formData.name.trim()) onSubmit(formData); };
             return (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -500,6 +508,10 @@
                                 <div><label className="block text-xs font-bold text-slate-600 uppercase mb-1">Attributed Agent</label><select className="w-full rounded-lg shadow-sm p-2.5 border text-sm" value={formData.agentId} onChange={e => setFormData({...formData, agentId: e.target.value})}>{AGENTS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
                             </div>
                             <div>
+                                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Classification Tags (Comma Separated)</label>
+                                <input type="text" className="w-full rounded-lg shadow-sm focus:border-indigo-500 focus:ring focus:ring-indigo-200 p-2.5 border text-sm" placeholder="e.g. tech, high-ticket, viral" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} />
+                            </div>
+                            <div>
                                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Initial Strategy Brief</label>
                                 <textarea className="w-full rounded-lg shadow-sm p-2.5 border min-h-[100px] text-sm resize-y" placeholder="Angles, hooks, or operational notes..." value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
                             </div>
@@ -514,11 +526,33 @@
         }
 
         function ProductDetailsModal({ product, onClose, onUpdate, onArchive, phases }) {
-            const [formData, setFormData] = useState({ name: product.name, notes: product.notes || '', storeId: product.storeId, agentId: product.agentId, driveLink: product.driveLink || '', competitorUrl: product.competitorUrl || '' });
+            const [formData, setFormData] = useState({ 
+                name: product.name, 
+                notes: product.notes || '', 
+                storeId: product.storeId, 
+                agentId: product.agentId, 
+                driveLink: product.driveLink || '', 
+                competitorUrl: product.competitorUrl || '',
+                tags: product.tags || '',
+                prompts: product.prompts || {} // The Hash Map holding generative AI prompts
+            });
+
+            // Handle Prompt Modification
+            const handlePromptChange = (phaseIndex, value) => {
+                setFormData(prev => ({
+                    ...prev,
+                    prompts: {
+                        ...prev.prompts,
+                        [phaseIndex]: value
+                    }
+                }));
+            };
+
             return (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-end z-50">
                     <div className="bg-white w-full max-w-lg h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-                        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-slate-50">
+                        
+                        <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-start bg-slate-50 shrink-0">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{(phases.find(p => p.index === product.currentPhase) || {}).name}</span>
@@ -528,19 +562,61 @@
                             </div>
                             <button onClick={onClose} className="text-slate-500 hover:bg-slate-200 p-2 rounded-full transition-colors"><IconX/></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            
                             <div className="grid grid-cols-2 gap-6">
                                 <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Designation</label><input type="text" className="w-full font-semibold border-b border-slate-200 pb-2 focus:outline-none focus:border-indigo-500 transition-colors" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                                 <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Agent Control</label><select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring focus:ring-indigo-100" value={formData.agentId} onChange={e => setFormData({...formData, agentId: e.target.value})}>{AGENTS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
                             </div>
-                            <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Deployed Store</label><select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring focus:ring-indigo-100" value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})}>{STORES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Deployed Store</label><select className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring focus:ring-indigo-100" value={formData.storeId} onChange={e => setFormData({...formData, storeId: e.target.value})}>{STORES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                                <div><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Tags (Comma Separated)</label><input type="text" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-medium focus:ring focus:ring-indigo-100" value={formData.tags} onChange={e => setFormData({...formData, tags: e.target.value})} /></div>
+                            </div>
+                            
                             <div className="space-y-4 pt-4 border-t border-slate-100">
                                 <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">Asset Repository (Drive Link)</label><input type="url" placeholder="https://..." className="w-full border-slate-200 rounded-lg p-2 border text-sm font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-sm" value={formData.driveLink} onChange={e => setFormData({...formData, driveLink: e.target.value})} /></div>
                                 <div><label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">Competitor Reference (URL)</label><input type="url" placeholder="https://..." className="w-full border-slate-200 rounded-lg p-2 border text-sm font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-sm" value={formData.competitorUrl} onChange={e => setFormData({...formData, competitorUrl: e.target.value})} /></div>
                             </div>
-                            <div className="pt-4 border-t border-slate-100"><label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Strategic Notes / Copy Sandbox</label><textarea className="w-full border-slate-200 rounded-lg p-3 border min-h-[150px] text-sm leading-relaxed shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
+                            
+                            <div className="pt-4 border-t border-slate-100">
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Strategic Notes / Copy Sandbox</label>
+                                <textarea className="w-full border-slate-200 rounded-lg p-3 border min-h-[100px] text-sm leading-relaxed shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
+                            </div>
+
+                            {/* ======================================================================== */}
+                            {/* THE CUMULATIVE PROMPT REPOSITORY (Dynamic Stack) */}
+                            {/* ======================================================================== */}
+                            <div className="pt-4 border-t border-slate-100 space-y-5">
+                                <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span> 
+                                    Generative Prompt Matrix
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">Prompts are cumulatively revealed as the product traverses the operational pipeline.</p>
+                                
+                                {Array.from({ length: product.currentPhase + 1 }).map((_, idx) => {
+                                    const phaseObj = phases.find(p => p.index === idx) || {};
+                                    return (
+                                        <div key={idx} className="bg-slate-50 rounded-xl border border-slate-200 p-4 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-indigo-400 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                                            <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-widest mb-2 pl-2">
+                                                [{phaseObj.name}] Prompt
+                                            </label>
+                                            <textarea 
+                                                className="w-full bg-white border-slate-200 rounded-lg p-3 border min-h-[80px] text-sm leading-relaxed shadow-inner focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y font-mono text-slate-700" 
+                                                placeholder="Paste generative AI prompt execution here..."
+                                                value={formData.prompts[idx] || ''} 
+                                                onChange={e => handlePromptChange(idx, e.target.value)} 
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
                         </div>
-                        <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center gap-4">
+                        
+                        <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center gap-4 shrink-0">
                             <button onClick={() => { if(window.confirm("Archive this product? It will be removed from the active pipeline but permanently preserved in the Google Sheets Ledger.")) onArchive(product.id); }} className="px-4 py-2 flex items-center gap-2 text-sm font-bold text-amber-700 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200">
                                 <IconArchive /> Soft Archive
                             </button>
@@ -549,6 +625,7 @@
                                 <button onClick={() => onUpdate(product.id, formData)} className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors">Commit Mutation</button>
                             </div>
                         </div>
+
                     </div>
                 </div>
             );
